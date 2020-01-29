@@ -8,7 +8,8 @@ from setuptools import setup
 from setuptools import find_packages
 
 with open('README.md', 'r') as f:
-    readme = f.read()
+    # readme = f.read()
+    pass
 
 install_requires = [
     'cached_property',
@@ -20,14 +21,14 @@ install_requires = [
     'numpy>=1.14',
     'terminaltables',
     'pandas',
-    'ray[debug]>=0.7.2',
+    'ray>=0.7.2',
 ]
 
 setup(
     name='machina-rl',
     version='0.2.1',
     description='machina is a library for a deep reinforcement learning.',
-    long_description=readme,
+    # long_description=readme,
     author='Reiji Hatsugai',
     author_email='reiji.hatsugai@deepx.co.jp',
     url='https://github.com/DeepX-inc/machina',

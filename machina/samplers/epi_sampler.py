@@ -1,5 +1,5 @@
 """
-Sampler class
+0;95;0c0;95;0cSampler class
 """
 
 import copy
@@ -165,11 +165,17 @@ class EpiSampler(object):
 
         self.epis = mp.Manager().list()
         self.processes = []
+        self.prepro = prepro
+        self.seed = seed
+
+        """
         for ind in range(self.num_parallel):
             p = mp.Process(target=mp_sample, args=(self.pol, env, self.max_steps, self.max_epis, self.n_steps_global,
                                                    self.n_epis_global, self.epis, self.exec_flags[ind], self.deterministic_flag, ind, prepro, seed))
             p.start()
             self.processes.append(p)
+        """
+
 
     def __del__(self):
         for p in self.processes:
@@ -208,7 +214,7 @@ class EpiSampler(object):
                 'Either max_epis or max_steps needs not to be None')
         max_epis = max_epis if max_epis is not None else LARGE_NUMBER
         max_steps = max_steps if max_steps is not None else LARGE_NUMBER
-
+        
         self.n_steps_global.zero_()
         self.n_epis_global.zero_()
 
@@ -228,6 +234,17 @@ class EpiSampler(object):
         for exec_flag in self.exec_flags:
             exec_flag += 1
 
+        for ind in range(self.num_parallel):
+            p = mp.Process(target=mp_sample, args=(self.pol, self.env, self.max_steps, self.max_epis, self.n_steps_global,
+                                                   self.n_epis_global, self.epis, self.exec_flags[ind],
+                                                   self.deterministic_flag, ind, self.prepro, self.seed))
+            p.start()
+            self.processes.append(p)
+                        
         while True:
             if all([exec_flag == 0 for exec_flag in self.exec_flags]):
+                for p in self.processes:
+                    p.terminate()
+                del self.processes[:]
+
                 return list(self.epis)
