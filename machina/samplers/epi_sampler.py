@@ -88,7 +88,8 @@ def one_epi(env, pol, deterministic=False, prepro=None):
         )
 
 
-def mp_sample(pol, env, max_steps, max_epis, n_steps_global, n_epis_global, epis, exec_flag, deterministic_flag, process_id, prepro=None, seed=256):
+def mp_sample(pol, env, max_steps, max_epis, n_steps_global, n_epis_global, epis, exec_flag,
+              deterministic_flag, process_id, prepro=None, seed=256):
     """
     Multiprocess sample.
     Sampling episodes until max_steps or max_epis is achieved.
@@ -130,6 +131,33 @@ def mp_sample(pol, env, max_steps, max_epis, n_steps_global, n_epis_global, epis
             exec_flag.zero_()
 
 
+def mp_sample2(args):
+
+    pol = args[0]
+    env = args[1]
+    max_steps = args[2]
+    max_epis = args[3]
+    n_steps_global = args[4]
+    n_epis_global = args[5]
+    deterministic_flag = args[6]
+    process_id = args[7]
+    prepro = args[8]
+    seed=args[9]
+    
+    np.random.seed(seed + process_id)
+    torch.manual_seed(seed + process_id)
+    torch.set_num_threads(1)
+
+    epis = []
+    time.sleep(0.1)
+    while max_steps > n_steps_global and max_epis > n_epis_global:
+        l, epi = one_epi(env, pol, deterministic_flag, prepro)
+        n_steps_global += l
+        n_epis_global += 1
+        epis.append(epi)
+    return epis
+
+
 class EpiSampler(object):
     """
     A sampler which sample episodes.
@@ -165,17 +193,27 @@ class EpiSampler(object):
 
         self.epis = mp.Manager().list()
         self.processes = []
+        
+        self.prepro = prepro
+        self.seed = seed
+
+        """
         for ind in range(self.num_parallel):
             p = mp.Process(target=mp_sample, args=(self.pol, env, self.max_steps, self.max_epis, self.n_steps_global,
-                                                   self.n_epis_global, self.epis, self.exec_flags[ind], self.deterministic_flag, ind, prepro, seed))
+                                                   self.n_epis_global, self.epis, self.exec_flags[ind],
+                                                   self.deterministic_flag, ind, prepro, seed))
             p.start()
             self.processes.append(p)
+        """
+
+        self.pools = mp.Pool(self.num_parallel)
+        
 
     def __del__(self):
         for p in self.processes:
             p.terminate()
 
-    def sample(self, pol, max_epis=None, max_steps=None, deterministic=False):
+    def sample(self, pol, env, max_epis=None, max_steps=None, deterministic=False):
         """
         Switch on sampling processes.
 
@@ -228,6 +266,23 @@ class EpiSampler(object):
         for exec_flag in self.exec_flags:
             exec_flag += 1
 
+        args = []
+        for i in range(self.num_parallel):
+            arg = [self.pol, env, self.max_steps, self.max_epis, self.n_steps_global, self.n_epis_global,
+                   self.deterministic_flag, i, self.prepro, self.seed]
+            args.append(arg)
+        
+        epis = self.pools.map(mp_sample2, args)
+
+        epis2 = []
+        for epi in epis:
+            for e in epi:
+                epis2.append(e)
+                
+        return list(epis2)
+
+        """
         while True:
             if all([exec_flag == 0 for exec_flag in self.exec_flags]):
                 return list(self.epis)
+       """
