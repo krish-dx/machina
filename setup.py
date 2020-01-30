@@ -8,7 +8,8 @@ from setuptools import setup
 from setuptools import find_packages
 
 with open('README.md', 'r') as f:
-    readme = f.read()
+    # readme = f.read()
+    readme = "hi"
 
 install_requires = [
     'cached_property',
@@ -20,7 +21,7 @@ install_requires = [
     'numpy>=1.14',
     'terminaltables',
     'pandas',
-    'ray[debug]>=0.7.2',
+    'ray>=0.7.2',
 ]
 
 setup(
