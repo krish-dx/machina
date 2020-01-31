@@ -206,7 +206,7 @@ class EpiSampler(object):
             self.processes.append(p)
         """
 
-        # self.pools = mp.Pool(self.num_parallel)
+        self.pools = mp.Pool(self.num_parallel)
         
 
     def __del__(self):
@@ -266,28 +266,26 @@ class EpiSampler(object):
         for exec_flag in self.exec_flags:
             exec_flag += 1
 
-        args = []
-                
-        self.pools = mp.Pool(self.num_parallel)        
+        args = []                
+        self.pools = mp.Pool(self.num_parallel)
         for i in range(self.num_parallel):
             arg = [self.pol, self.env, self.max_steps, self.max_epis, self.n_steps_global,
                    self.n_epis_global, self.deterministic_flag, i, self.prepro, self.seed]
             args.append(arg)
         epis = self.pools.map(mp_sample2, args)
+
+        self.pools.close()
+        self.pools.join()
         
         epis2 = []
         for epi in epis:
             for e in epi:
                 epis2.append(e)
                 
-        del epis
-        del args
+        # del epis
+        # del args
+
         self.pools.terminate()
+        del self.pools
                 
         return list(epis2)
-
-        """
-        while True:
-            if all([exec_flag == 0 for exec_flag in self.exec_flags]):
-                return list(self.epis)
-       """
